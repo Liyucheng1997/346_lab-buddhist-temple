@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>佛教寺院 · 程序化三维模型</title>
+<style>
+  :root { color-scheme: dark; }
+  html, body { margin: 0; height: 100%; background: #0e0c0a; color: #efe6d6; font-family: "Noto Serif SC", "Songti SC", "SimSun", serif; overflow: hidden; }
+  canvas { display: block; }
+  #hud { position: fixed; left: 0; right: 0; top: 0; display: flex; justify-content: space-between; align-items: flex-start; padding: 14px 18px; pointer-events: none; z-index: 3; }
+  #title { font-size: 22px; letter-spacing: 6px; text-shadow: 0 2px 8px #000; }
+  #title small { display: block; font-size: 12px; letter-spacing: 2px; opacity: .7; margin-top: 4px; }
+  #nav { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; pointer-events: auto; max-width: 60vw; }
+  #nav button { background: rgba(60, 20, 12, .75); color: #f3e3c0; border: 1px solid rgba(230, 180, 90, .45); border-radius: 4px; padding: 6px 10px; font: inherit; font-size: 13px; letter-spacing: 2px; cursor: pointer; backdrop-filter: blur(6px); }
+  #nav button:hover, #nav button.on { background: rgba(140, 40, 24, .85); border-color: #e6b45a; }
+  #label { position: fixed; z-index: 4; pointer-events: none; background: rgba(20, 12, 8, .8); border: 1px solid rgba(230, 180, 90, .5); padding: 6px 10px; border-radius: 4px; font-size: 13px; letter-spacing: 1px; transform: translate(12px, -50%); display: none; white-space: nowrap; }
+  #loading { position: fixed; inset: 0; z-index: 10; display: flex; flex-direction: column; align-items: center; justify-content: center; background: radial-gradient(ellipse at center, #2a1a10 0%, #0e0c0a 70%); transition: opacity .8s; }
+  #loading h1 { font-weight: 400; letter-spacing: 10px; font-size: 28px; margin: 0 0 18px; color: #e8c478; }
+  #bar { width: 320px; height: 3px; background: rgba(255,255,255,.12); border-radius: 2px; overflow: hidden; }
+  #bar i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, #c8842a, #f0d080); transition: width .2s; }
+  #status { margin-top: 10px; font-size: 12px; opacity: .7; letter-spacing: 2px; }
+  #help { position: fixed; left: 18px; bottom: 14px; font-size: 12px; opacity: .55; letter-spacing: 1px; z-index: 3; pointer-events: none; text-shadow: 0 1px 4px #000; }
+  #stats { position: fixed; right: 18px; bottom: 14px; font-size: 11px; opacity: .5; z-index: 3; pointer-events: none; font-family: monospace; }
+</style>
+</head>
+<body>
+<div id="loading"><h1>大雄宝刹</h1><div id="bar"><i></i></div><div id="status">正在营造殿宇…</div></div>
+<div id="hud">
+  <div id="title">汉传佛教寺院<small>伽蓝七堂 · 程序化建模</small></div>
+  <div id="nav"></div>
+</div>
+<div id="label"></div>
+<div id="help">鼠标拖动旋转 · 滚轮缩放 · 右键平移 · 点击上方按钮巡礼各殿 · 悬停造像显示名号</div>
+<div id="stats"></div>
+<script type="module" src="/src/main.js"></script>
+</body>
+</html>

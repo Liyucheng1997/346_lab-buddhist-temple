@@ -1,0 +1,5 @@
+node_modules/
+dist/
+# 预烘焙的造像网格（84 MB，可用 node tools/bake.mjs 重新生成；缺失时运行时自动回退为实时雕塑）
+public/statues/*.bin
+.claude/
