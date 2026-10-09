@@ -15,7 +15,7 @@ self.onmessage = (e) => {
       transfer.push(r.positions.buffer, r.normals.buffer, r.colors.buffer);
       for (const g of Object.values(r.groups)) transfer.push(g.buffer);
     }
-    self.postMessage({ id, ok: true, parts, props: def.props || [], height: def.height, ms: performance.now() - t0 }, transfer);
+    self.postMessage({ id, ok: true, parts, props: def.props || [], height: def.height, decal: def.decal, ms: performance.now() - t0 }, transfer);
   } catch (err) {
     self.postMessage({ id, ok: false, error: String(err && err.stack || err) });
   }

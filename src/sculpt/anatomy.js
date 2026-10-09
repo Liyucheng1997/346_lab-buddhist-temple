@@ -68,6 +68,7 @@ export class Frame {
     const n = { ...o };
     delete n.rot;
     n.k = (o.k ?? 0.02) * this.s;
+    if (o.mbias) n.mbias = o.mbias * this.s;
     if (o.folds) n.folds = { ...o.folds, amp: o.folds.amp * this.s, freq: o.folds.freq / this.s, dir: this.d(o.folds.dir) };
     if (o.curls) n.curls = { amp: o.curls.amp * this.s, freq: o.curls.freq / this.s };
     if (o.noise) n.noise = { ...o.noise, amp: o.noise.amp * this.s, freq: o.noise.freq / this.s };
@@ -117,6 +118,18 @@ export class Frame {
     }
     return this;
   }
+  // 局部坐标下定义的函数场（fn 以局部单位返回距离），c/br 为局部包围球
+  field(fn, c, br, o = {}) {
+    const O = this.o, s = this.s, R = this.R, mx = this.mx;
+    const wfn = (x, y, z) => {
+      const dx = (x - O[0]) / s, dy = (y - O[1]) / s, dz = (z - O[2]) / s;
+      return fn((R[0] * dx + R[3] * dy + R[6] * dz) * mx, R[1] * dx + R[4] * dy + R[7] * dz, R[2] * dx + R[5] * dy + R[8] * dz) * s;
+    };
+    this.S.field(wfn, this.p(c), br * s, this._opts(o));
+    return this;
+  }
+  // 局部 → 世界的变换（供着色器把顶点换回局部坐标）
+  xform() { return { o: this.o, s: this.s, R: this.R }; }
   mirror(fn) { fn(this); fn(this.mirrored()); return this; }
   surface(v, dir, far = 1.5) {
     const w = this.p(v);

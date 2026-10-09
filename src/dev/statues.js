@@ -4,12 +4,15 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { SculptPool, assembleStatue } from '../sculpt/pool.js';
 import { lotusThrone, mandorla } from '../temple/throne.js';
+import { buddhaMandorla } from '../temple/mandorla.js';
 
 const PRESETS = {
-  '释迦牟尼佛（触地印）': ['seatedBuddha', { mudra: 'earth' }],
+  '释迦牟尼佛（与愿印）': ['seatedBuddha', { mudra: 'varada' }],
+  '触地印佛': ['seatedBuddha', { mudra: 'earth' }],
   '药师佛（托钵）': ['seatedBuddha', { mudra: 'bowl' }],
   '阿弥陀佛（托莲）': ['seatedBuddha', { mudra: 'lotus' }],
   '禅定印佛': ['seatedBuddha', { mudra: 'dhyana' }],
+  '佛头（调试）': ['seatedBuddha', { mudra: 'dhyana', headOnly: true }],
   '说法印佛': ['seatedBuddha', { mudra: 'teach' }],
   '东方持国天王': ['heavenlyKing', { which: 'east' }],
   '南方增长天王': ['heavenlyKing', { which: 'south' }],
@@ -37,6 +40,7 @@ renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 document.body.appendChild(renderer.domElement);
 
 const scene = new THREE.Scene();
+window.__scene = scene;
 scene.background = new THREE.Color(0x1a1412);
 const pmrem = new THREE.PMREMGenerator(renderer);
 scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
@@ -70,6 +74,7 @@ const pool = new SculptPool();
 const throne = lotusThrone(0.62); scene.add(throne);
 const back = mandorla(1.75, 2.5, { headY: 0.35 }); back.position.set(0, throne.userData.top + 0.55, -0.42); scene.add(back);
 const pedY = throne.userData.top;
+const bMand = buddhaMandorla(); bMand.position.y = pedY; scene.add(bMand);
 let current = null;
 const sel = document.getElementById('type');
 for (const k of Object.keys(PRESETS)) sel.add(new Option(k, k));
@@ -77,7 +82,8 @@ const qs = new URLSearchParams(location.search);
 if (qs.get('s') && PRESETS[qs.get('s')]) sel.value = qs.get('s');
 
 async function generate() {
-  const [type, params] = PRESETS[sel.value];
+  const [type, params0] = PRESETS[sel.value];
+  const params = qs.get('q') ? { ...params0, quality: Number(qs.get('q')) } : params0;
   document.getElementById('info').textContent = '雕塑中…';
   const t0 = performance.now();
   let data;
@@ -85,7 +91,8 @@ async function generate() {
   if (current) scene.remove(current);
   current = assembleStatue(data);
   const seated = type === 'seatedBuddha' || type === 'maitreya' || type === 'arhat';
-  throne.visible = seated; back.visible = seated;
+  const isBuddha = type === 'seatedBuddha';
+  throne.visible = seated; back.visible = seated && !isBuddha; bMand.visible = isBuddha;
   current.position.y = seated ? pedY : 0;
   scene.add(current);
   let tris = 0;
@@ -98,7 +105,7 @@ sel.onchange = generate;
 // 画廊模式：?all=名称1,名称2（或 all=1 显示全部），并排生成
 const all = qs.get('all');
 if (all) {
-  throne.visible = back.visible = false;
+  throne.visible = back.visible = bMand.visible = false;
   const names = all === '1' ? Object.keys(PRESETS) : all.split(',');
   document.getElementById('info').textContent = '雕塑中…';
   let done = 0;

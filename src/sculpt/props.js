@@ -1,6 +1,7 @@
 // 造像持物（法器）：用精确的几何体建模，保证边缘锐利
 import * as THREE from 'three';
 import { M } from '../core/materials.js';
+import { buildCurls } from './curls.js';
 
 function lathe(profile, seg = 48) {
   return new THREE.LatheGeometry(profile.map(([r, y]) => new THREE.Vector2(r, y)), seg);
@@ -43,6 +44,7 @@ export function petalGeometry(len = 1, width = 0.45, cup = 0.25, tipCurl = 0.25,
 }
 
 const builders = {
+  curls: buildCurls,
   // 锡杖
   staff(pr) {
     const g = new THREE.Group();

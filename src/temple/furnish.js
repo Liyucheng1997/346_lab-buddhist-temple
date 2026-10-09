@@ -2,6 +2,7 @@
 import * as THREE from 'three';
 import { loadStatue } from '../sculpt/load.js';
 import { lotusThrone, mandorla } from './throne.js';
+import { buddhaMandorla } from './mandorla.js';
 import { M } from '../core/materials.js';
 
 // 真实尺寸（米）：造像局部高度 → 目标高度
@@ -107,8 +108,8 @@ export async function furnishTemple(scene, temple, { onProgress, onStatue, addVi
     for (const [id, x] of trio) {
       const th = lotusThrone(0.95); th.scale.setScalar(1.65); th.position.set(x, top, az); scene.add(th);
       const seatY = top + th.userData.top * 1.65;
-      place(id, 'daxiong', (g) => { g.position.set(x, seatY, az); });
-      const back = mandorla(1.75, 2.5, { headY: 0.35 }); back.scale.setScalar(2.3); back.position.set(x, seatY + 1.25, az - 1.3); scene.add(back);
+      // 背光与造像同缩放、同原点（座面中心），头光正对佛头
+      place(id, 'daxiong', (g) => { g.position.set(x, seatY, az); const back = buddhaMandorla(); back.scale.copy(g.scale); back.position.copy(g.position); scene.add(back); });
     }
     place('kasyapa', 'daxiong', (g) => { g.position.set(-2.3, top, az + 1.9); g.rotation.y = 0.35; });
     place('ananda', 'daxiong', (g) => { g.position.set(2.3, top, az + 1.9); g.rotation.y = -0.35; });

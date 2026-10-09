@@ -2,7 +2,7 @@
 // 法线量化为 int8×3，颜色量化为 uint8×3（线性空间 ×255）。
 
 export function encode(data) {
-  const meta = { height: data.height, name: data.name, props: data.props, parts: [] };
+  const meta = { height: data.height, name: data.name, props: data.props, decal: data.decal, parts: [] };
   const chunks = [];
   let offset = 0;
   const push = (buf) => {
@@ -48,5 +48,5 @@ export function decode(buffer) {
     for (const [cls, g] of Object.entries(p.groups)) groups[cls] = new Uint32Array(buffer, base + g.off, g.n);
     return { name: p.name, positions, normals, colors, groups };
   });
-  return { parts, props: meta.props, height: meta.height, name: meta.name };
+  return { parts, props: meta.props, height: meta.height, name: meta.name, decal: meta.decal };
 }

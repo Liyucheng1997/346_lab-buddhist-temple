@@ -8,6 +8,39 @@ function lathe(profile, seg = 64) {
 }
 function mesh(g, m) { const o = new THREE.Mesh(g, m); o.castShadow = o.receiveShadow = true; return o; }
 
+// 朱红莲瓣 + 描金叶脉（Canvas 程序贴图；金线同时写入金属度贴图）
+let _petalMat = null;
+function redPetalMaterial() {
+  if (_petalMat) return _petalMat;
+  const W = 256, H = 512;
+  const mk = () => { const c = document.createElement('canvas'); c.width = W; c.height = H; return c; };
+  const col = mk(), met = mk();
+  const g = col.getContext('2d'), m = met.getContext('2d');
+  const grd = g.createLinearGradient(0, H, 0, 0);
+  grd.addColorStop(0, '#5e1410'); grd.addColorStop(0.35, '#8e231b'); grd.addColorStop(0.8, '#a8352a'); grd.addColorStop(1, '#b8473a');
+  g.fillStyle = grd; g.fillRect(0, 0, W, H);
+  m.fillStyle = '#000'; m.fillRect(0, 0, W, H);
+  const line = (ctx, w, color) => { ctx.strokeStyle = color; ctx.lineWidth = w; ctx.lineCap = 'round'; };
+  // 叶脉：自瓣根中心放射到瓣尖附近
+  for (const ctx of [g, m]) {
+    line(ctx, 3.2, ctx === g ? '#e9be62' : '#fff');
+    for (let i = -7; i <= 7; i++) {
+      const t = i / 7.5;
+      ctx.beginPath();
+      ctx.moveTo(W / 2 + t * 18, H - 4);
+      ctx.quadraticCurveTo(W / 2 + t * W * 0.5, H * 0.45, W / 2 + t * W * 0.28 * (1 - Math.abs(t) * 0.3), H * (0.08 + 0.12 * Math.abs(t) ** 1.6));
+      ctx.stroke();
+    }
+    // 描金边
+    line(ctx, 9, ctx === g ? '#f0c86a' : '#fff');
+    ctx.strokeRect(0, 0, W, H);
+  }
+  const map = new THREE.CanvasTexture(col); map.colorSpace = THREE.SRGBColorSpace; map.anisotropy = 4;
+  const metalnessMap = new THREE.CanvasTexture(met);
+  _petalMat = new THREE.MeshStandardMaterial({ map, metalnessMap, metalness: 1, roughness: 0.42, side: THREE.DoubleSide });
+  return _petalMat;
+}
+
 /**
  * 莲花座。返回 Group，顶面在 y = top（返回值 group.userData.top）。
  * r: 座面半径（造像盘坐半宽 ≈ 0.56 → r ≈ 0.6）
@@ -15,8 +48,8 @@ function mesh(g, m) { const o = new THREE.Mesh(g, m); o.castShadow = o.receiveSh
 export function lotusThrone(r = 0.62, opt = {}) {
   const g = new THREE.Group();
   const red = M.lacquerRed(), gold = M.gold();
-  const petalGold = opt.petalMat || gold;
-  const petalInner = M.paint(0xb3473a, 0.5);
+  const petalGold = opt.petalMat || redPetalMaterial();
+  const petalInner = petalGold;
   const seg = 96;
 
   // ---- 须弥座（束腰） ----

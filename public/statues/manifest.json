@@ -25,14 +25,14 @@
   "q": 1.25
  },
  "buddha_bhaisajya": {
-  "bytes": 5122744,
-  "tris": 243638,
-  "q": 1.25
+  "bytes": 17871880,
+  "tris": 845864,
+  "q": 1.1
  },
  "buddha_sakyamuni": {
-  "bytes": 5348932,
-  "tris": 254218,
-  "q": 1.25
+  "bytes": 19167900,
+  "tris": 906732,
+  "q": 1.1
  },
  "king_west": {
   "bytes": 4358860,
@@ -80,9 +80,9 @@
   "q": 1.25
  },
  "buddha_amitabha": {
-  "bytes": 5122748,
-  "tris": 243638,
-  "q": 1.25
+  "bytes": 17871884,
+  "tris": 845864,
+  "q": 1.1
  },
  "arhat_6": {
   "bytes": 1491176,

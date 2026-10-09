@@ -1,7 +1,7 @@
 // 有符号距离场（SDF）雕塑引擎 —— 像捏泥塑一样，用平滑融合的基本体塑造造像。
 // 所有尺寸为“造像局部单位”，最终网格再整体缩放。
 
-const T_SPHERE = 0, T_ELLIPSOID = 1, T_ROUNDCONE = 2, T_BOX = 3, T_TORUS = 4, T_CYL = 5;
+const T_SPHERE = 0, T_ELLIPSOID = 1, T_ROUNDCONE = 2, T_BOX = 3, T_TORUS = 4, T_CYL = 5, T_FUNC = 6;
 const OP_ADD = 0, OP_SUB = 1, OP_PAINT = 2, OP_INTER = 3;
 const D_NONE = 0, D_FOLDS = 1, D_CURLS = 2, D_NOISE = 3, D_SCALES = 4;
 
@@ -67,6 +67,7 @@ export class Sculpt {
     p.op = o.op === 'sub' ? OP_SUB : o.op === 'paint' ? OP_PAINT : o.op === 'inter' ? OP_INTER : OP_ADD;
     p.k = o.k ?? 0.02;
     p.m = o.mat !== undefined ? this.mat(o.mat) : 0;
+    p.mb = o.mbias ?? 0; // 材质优先级：判定顶点材质时视作更近
     p.dt = D_NONE;
     if (o.folds) { // 衣纹：沿方向 dir 的正弦起伏
       const f = o.folds;
@@ -161,6 +162,11 @@ export class Sculpt {
     return this._push({ t: T_CYL, cx: c[0], cy: c[1], cz: c[2], cr: r, ch: h, rnd: rad, R, br: Math.hypot(r, h) + rad }, o);
   }
 
+  // 任意函数场：fn(x,y,z) 返回（近似、不高估的）距离；c、br 为包围球（用于剔除）
+  field(fn, c, br, o = {}) {
+    return this._push({ t: T_FUNC, fn, cx: c[0], cy: c[1], cz: c[2], br }, o);
+  }
+
   // 左右对称：对 x 取负后再调用一次
   mirror(fn) { fn(1); fn(-1); return this; }
 
@@ -220,6 +226,9 @@ export class Sculpt {
         d = Math.min(Math.max(dx, dy), 0) + Math.sqrt(mx * mx + my * my) - p.rnd;
         break;
       }
+      case T_FUNC:
+        d = p.fn(x, y, z);
+        break;
     }
     if (p.cl) {
       const pd = (x - p.cpx) * p.cnx + (y - p.cpy) * p.cny + (z - p.cpz) * p.cnz;
@@ -279,8 +288,8 @@ export class Sculpt {
       const p = P[i];
       if (p.op === OP_ADD) {
         const ex = x - p.cx, ey = y - p.cy, ez = z - p.cz;
-        if (Math.sqrt(ex * ex + ey * ey + ez * ez) - p.br > best) continue;
-        const di = this._primDist(p, x, y, z);
+        if (Math.sqrt(ex * ex + ey * ey + ez * ez) - p.br - p.mb > best) continue;
+        const di = this._primDist(p, x, y, z) - p.mb;
         if (di < best) { best = di; m = p.m; }
       } else if (p.op === OP_PAINT) {
         const di = this._primDist(p, x, y, z);

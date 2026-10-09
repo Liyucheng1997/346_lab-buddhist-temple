@@ -4,7 +4,7 @@ const base = {
   robe: { color: '#d9ad62', cls: 'gold' },
   robeEdge: { color: '#c49448', cls: 'gold' },
   robeIn: { color: '#e2b86c', cls: 'gold' },
-  hair: { color: '#1a2a52', cls: 'paint' },          // 石青螺发
+  hair: { color: '#1f2f72', cls: 'paint' },          // 石青螺发
   hairBlack: { color: '#1a1714', cls: 'paint' },
   whiteHair: { color: '#e8e4da', cls: 'paint' },
   jewel: { color: '#c22a2a', cls: 'gloss' },

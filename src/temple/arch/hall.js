@@ -374,17 +374,48 @@ export function buildHall(opt) {
   const tianM = AM.tianhua();
   const r0 = Math.min(bayWidth, bayDepth) * 0.55; // 藻井半径
   let tp;
-  if (doubleEave) {
-    // 带八角洞口的天花板（洞口上方为藻井）
+  // 重檐殿：金柱以内的明间天花抬高（主尊连背光高逾 6 米，原天花压在佛头上）
+  const ix0 = Math.min(xs[1], xs[xs.length - 2]), ix1 = Math.max(xs[1], xs[xs.length - 2]);
+  const iz0 = Math.min(zs[1], zs[zs.length - 2]), iz1 = Math.max(zs[1], zs[zs.length - 2]);
+  const raiseInner = doubleEave && storeys === 1;
+  const ceilHi = raiseInner ? floorY + hc * 1.43 : ceilY;
+  const tianhuaWithHole = (hw, hd, cx, cz, hole) => {
     const sh = new THREE.Shape();
-    const hw = (spanX - wallT) / 2, hd = (spanZ - wallT) / 2;
     sh.moveTo(-hw, -hd); sh.lineTo(hw, -hd); sh.lineTo(hw, hd); sh.lineTo(-hw, hd); sh.closePath();
-    const hole = new THREE.Path();
-    for (let i = 0; i < 8; i++) { const a = (i / 8) * Math.PI * 2 + Math.PI / 8; const x = Math.cos(a) * r0, y = Math.sin(a) * r0; i ? hole.lineTo(x, y) : hole.moveTo(x, y); }
-    hole.closePath(); sh.holes.push(hole);
-    tp = new THREE.ShapeGeometry(sh, 2);
-    const uv = tp.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setXY(i, (uv.getX(i) + hw) / (2 * hw) * nx, (uv.getY(i) + hd) / (2 * hd) * nz);
-    tp.rotateX(Math.PI / 2);
+    sh.holes.push(hole);
+    const g = new THREE.ShapeGeometry(sh, 2);
+    const uv = g.attributes.uv;
+    const ux = (2 * hw) / (spanX - wallT) * nx, uz = (2 * hd) / (spanZ - wallT) * nz;
+    for (let i = 0; i < uv.count; i++) uv.setXY(i, (uv.getX(i) + hw) / (2 * hw) * ux, (uv.getY(i) + hd) / (2 * hd) * uz);
+    g.rotateX(Math.PI / 2);
+    g.translate(cx, 0, cz);
+    return g;
+  };
+  const octHole = () => {
+    const oct = new THREE.Path();
+    for (let i = 0; i < 8; i++) { const a = (i / 8) * Math.PI * 2 + Math.PI / 8; const x = Math.cos(a) * r0, y = Math.sin(a) * r0; i ? oct.lineTo(x, y) : oct.moveTo(x, y); }
+    oct.closePath();
+    return oct;
+  };
+  if (doubleEave && !raiseInner) {
+    tp = tianhuaWithHole((spanX - wallT) / 2, (spanZ - wallT) / 2, 0, 0, octHole());
+  } else if (raiseInner) {
+    // 外圈天花：中间挖出金柱围合的矩形
+    const hw = (spanX - wallT) / 2, hd = (spanZ - wallT) / 2;
+    const rect = new THREE.Path();
+    rect.moveTo(ix0, iz0); rect.lineTo(ix0, iz1); rect.lineTo(ix1, iz1); rect.lineTo(ix1, iz0); rect.closePath();
+    tp = tianhuaWithHole(hw, hd, 0, 0, rect);
+    // 抬高的明间天花，中央八角洞口上为藻井
+    b.add(tianhuaWithHole((ix1 - ix0) / 2, (iz1 - iz0) / 2, (ix0 + ix1) / 2, (iz0 + iz1) / 2, octHole()), tianM, mat4(0, ceilHi, 0));
+    // 天花抬升处的四面垂板（朱红板面 + 上下枋）
+    const fh = ceilHi - ceilY;
+    for (const [w, dd, x, z] of [[ix1 - ix0, 0.12, (ix0 + ix1) / 2, iz0], [ix1 - ix0, 0.12, (ix0 + ix1) / 2, iz1], [0.12, iz1 - iz0, ix0, (iz0 + iz1) / 2], [0.12, iz1 - iz0, ix1, (iz0 + iz1) / 2]]) {
+      b.add(box(w, fh, dd), AM.redWall(), mat4(x, ceilY + fh / 2, z));
+      for (const yy of [ceilY + 0.15, ceilHi - 0.15]) b.add(box(w + 0.04, 0.3, dd + 0.06), AM.rafter(), mat4(x, yy, z));
+    }
+    const cnx = Math.round((ix1 - ix0) / cell), cnz = Math.round((iz1 - iz0) / cell);
+    for (let i = 0; i <= cnx; i++) b.add(box(0.1, 0.12, iz1 - iz0), AM.rafter(), mat4(ix0 + (ix1 - ix0) * (i / cnx), ceilHi - 0.06, (iz0 + iz1) / 2));
+    for (let j = 0; j <= cnz; j++) b.add(box(ix1 - ix0, 0.12, 0.1), AM.rafter(), mat4((ix0 + ix1) / 2, ceilHi - 0.06, iz0 + (iz1 - iz0) * (j / cnz)));
   } else {
     tp = new THREE.PlaneGeometry(spanX - wallT, spanZ - wallT);
     tp.rotateX(Math.PI / 2);
@@ -392,21 +423,27 @@ export function buildHall(opt) {
   }
   b.add(tp, tianM, mat4(0, ceilY, 0));
   // 井口枋（格栅）
-  for (let i = 0; i <= nx; i++) b.add(box(0.1, 0.12, spanZ - wallT), AM.rafter(), mat4(-spanX / 2 + wallT / 2 + (spanX - wallT) * (i / nx), ceilY - 0.06, 0));
-  for (let j = 0; j <= nz; j++) b.add(box(spanX - wallT, 0.12, 0.1), AM.rafter(), mat4(0, ceilY - 0.06, -spanZ / 2 + wallT / 2 + (spanZ - wallT) * (j / nz)));
+  // （重檐殿的井口枋只铺在外圈，明间留空给抬高的天花）
+  const gridX = (x0, x1, z0, z1, y) => { for (let i = 0; i <= nx; i++) { const x = -spanX / 2 + wallT / 2 + (spanX - wallT) * (i / nx); if (x >= x0 && x <= x1) b.add(box(0.1, 0.12, z1 - z0), AM.rafter(), mat4(x, y, (z0 + z1) / 2)); } };
+  const gridZ = (x0, x1, z0, z1, y) => { for (let j = 0; j <= nz; j++) { const z = -spanZ / 2 + wallT / 2 + (spanZ - wallT) * (j / nz); if (z >= z0 && z <= z1) b.add(box(x1 - x0, 0.12, 0.1), AM.rafter(), mat4((x0 + x1) / 2, y, z)); } };
+  const HX = (spanX - wallT) / 2, HZ = (spanZ - wallT) / 2, yg = ceilY - 0.06;
+  if (raiseInner) {
+    gridX(-HX, HX, -HZ, iz0, yg); gridX(-HX, HX, iz1, HZ, yg); gridX(-HX, ix0, iz0, iz1, yg); gridX(ix1, HX, iz0, iz1, yg);
+    gridZ(-HX, ix0, -HZ, HZ, yg); gridZ(ix1, HX, -HZ, HZ, yg); gridZ(ix0, ix1, -HZ, iz0, yg); gridZ(ix0, ix1, iz1, HZ, yg);
+  } else { gridX(-HX, HX, -HZ, HZ, yg); gridZ(-HX, HX, -HZ, HZ, yg); }
   if (doubleEave) {
     // 藻井：中央八角叠涩穹顶（金）
     const zj = lathe([[r0 * 1.02, 0], [r0 * 0.85, 0.5], [r0 * 0.7, 0.9], [r0 * 0.5, 1.25], [r0 * 0.3, 1.5], [0.1, 1.65], [0, 1.65]], 8);
     zj.scale(1, 1, -1); zj.computeVertexNormals(); // 翻转朝内，使穹顶从下方可见
-    b.add(zj, AM.gold(), mat4(0, ceilY - 0.02, 0, 0, Math.PI / 8, 0));
+    b.add(zj, AM.gold(), mat4(0, ceilHi - 0.02, 0, 0, Math.PI / 8, 0));
     // 叠涩层（逐层收进的八角环）
     for (let k = 0; k < 3; k++) {
-      const rr = r0 * (0.95 - k * 0.18), yy = ceilY + 0.3 + k * 0.42;
+      const rr = r0 * (0.95 - k * 0.18), yy = ceilHi + 0.3 + k * 0.42;
       b.add(new THREE.TorusGeometry(rr, 0.07, 5, 8), AM.rafter(), mat4(0, yy, 0, Math.PI / 2, Math.PI / 8, 0));
     }
     // 顶部蟠龙宝珠
-    b.add(new THREE.SphereGeometry(0.18, 10, 8), AM.gold(), mat4(0, ceilY + 1.45, 0));
-    b.add(new THREE.TorusGeometry(r0 * 0.98, 0.08, 6, 8), AM.rafter(), mat4(0, ceilY - 0.02, 0, Math.PI / 2, Math.PI / 8, 0));
+    b.add(new THREE.SphereGeometry(0.18, 10, 8), AM.gold(), mat4(0, ceilHi + 1.45, 0));
+    b.add(new THREE.TorusGeometry(r0 * 0.98, 0.08, 6, 8), AM.rafter(), mat4(0, ceilHi - 0.02, 0, Math.PI / 2, Math.PI / 8, 0));
   }
   // 内檐（金柱上的额枋）
   for (const j of [1, zs.length - 2]) if (j > 0 && j < zs.length - 1) {
@@ -505,7 +542,7 @@ export function buildHall(opt) {
   void roof;
   group.userData = {
     floorY,
-    interior: { xMin: xL + wallT, xMax: xR - wallT, zMin: zB + wallT, zMax: zF - wallT, yMax: ceilY },
+    interior: { xMin: xL + wallT, xMax: xR - wallT, zMin: zB + wallT, zMax: zF - wallT, yMax: ceilY, yMaxInner: ceilHi },
     entrance: [0, floorY, zF],
     span: { w: spanX, d: spanZ, platformW: pw, platformD: pd },
     innerRows: { front: zs[1], back: zs[zs.length - 2] },

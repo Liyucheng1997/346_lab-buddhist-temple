@@ -19,10 +19,10 @@ if (!isMainThread) {
     const r = polygonize(def.S, p.bmin, p.bmax, p.h * Qe, { exclude: p.exclude });
     return { name: p.name, ...r };
   });
-  const buf = encode({ parts, props: def.props || [], height: def.height, name: def.name });
+  const buf = encode({ parts, props: def.props || [], height: def.height, name: def.name, decal: def.decal });
   writeFileSync(new URL(id + '.bin', OUT), Buffer.from(buf));
   const tris = parts.reduce((a, p) => a + Object.values(p.groups).reduce((b, g) => b + g.length / 3, 0), 0);
-  parentPort.postMessage({ id, bytes: buf.byteLength, tris });
+  parentPort.postMessage({ id, bytes: buf.byteLength, tris, q: Qe });
 } else {
   mkdirSync(OUT, { recursive: true });
   const manifestPath = new URL('manifest.json', OUT);
@@ -43,7 +43,7 @@ if (!isMainThread) {
         running++;
         const w = new Worker(new URL(import.meta.url), { workerData: { ...job, q: job.q ?? Q } });
         w.on('message', (m) => {
-          manifest[m.id] = { bytes: m.bytes, tris: m.tris, q: Q };
+          manifest[m.id] = { bytes: m.bytes, tris: m.tris, q: m.q };
           console.log('OK ' + m.id + '  ' + (m.bytes / 1e6).toFixed(1) + ' MB  ' + ((m.tris / 1000) | 0) + 'k tris  (' + (((performance.now() - t0) / 1000) | 0) + 's)');
         });
         w.on('error', (e) => console.error('FAIL', job.id, e));

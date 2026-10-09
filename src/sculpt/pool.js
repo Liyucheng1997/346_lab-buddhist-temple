@@ -2,6 +2,7 @@
 import * as THREE from 'three';
 import { statueMaterials } from '../core/materials.js';
 import { buildProp } from './props.js';
+import { decalMaterial } from './faceDecal.js';
 
 export class SculptPool {
   constructor(n = Math.max(2, Math.min(6, (navigator.hardwareConcurrency || 4) - 1))) {
@@ -50,6 +51,7 @@ const CLASS_ORDER = ['gold', 'paint', 'gloss', 'metal'];
 export function assembleStatue(data, opts = {}) {
   const mats = statueMaterials();
   const group = new THREE.Group();
+  const decalGold = data.decal ? decalMaterial(mats.gold, { skinLum: 0.5, ...data.decal }) : null;
   for (const part of data.parts) {
     const g = new THREE.BufferGeometry();
     g.setAttribute('position', new THREE.BufferAttribute(part.positions, 3));
@@ -63,7 +65,7 @@ export function assembleStatue(data, opts = {}) {
       if (!idx) continue;
       for (let i = 0; i < idx.length; i++) all.push(idx[i]);
       g.addGroup(start, idx.length, materials.length);
-      materials.push(mats[cls]);
+      materials.push(cls === 'gold' && decalGold && part.name.startsWith(data.decal.part) ? decalGold : mats[cls]);
       start += idx.length;
     }
     if (!all.length) continue;
